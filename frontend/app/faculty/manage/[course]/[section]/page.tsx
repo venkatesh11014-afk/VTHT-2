@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { 
     Save, FileUp, UserCheck, ArrowLeft, Search, Loader2, 
-    Megaphone, BookOpen, FileText, ClipboardList, Beaker, Trash2 
+    Megaphone, BookOpen, FileText, ClipboardList, Beaker, Video, Trash2 
 } from 'lucide-react';
 
 export default function SectionManagement() {
@@ -141,6 +141,35 @@ export default function SectionManagement() {
         }
     };
 
+    // --- NEW: POST YOUTUBE VIDEO URL ---
+    const handleYouTubePost = async (titleId: string, urlId: string, type: string) => {
+        const titleInput = document.getElementById(titleId) as HTMLInputElement;
+        const urlInput = document.getElementById(urlId) as HTMLInputElement;
+        const userId = localStorage.getItem('user_id');
+
+        if (!titleInput?.value || !urlInput?.value) { alert("Title and YouTube URL are required!"); return; }
+
+        const formData = new FormData();
+        formData.append('course_code', courseCode);
+        formData.append('type', type);
+        formData.append('title', titleInput.value);
+        formData.append('posted_by', userId!);
+        formData.append('url', urlInput.value);
+
+        setUploading(true);
+        try {
+            await axios.post(`${API_URL}/materials`, formData);
+            alert(`🎬 Video posted!`);
+            titleInput.value = "";
+            urlInput.value = "";
+            fetchMaterials();
+        } catch (error) {
+            alert("Video post failed.");
+        } finally {
+            setUploading(false);
+        }
+    };
+
     // --- 7. ANNOUNCEMENT LOGIC ---
     const handlePostSubAnnouncement = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -256,14 +285,25 @@ export default function SectionManagement() {
                     <div className="space-y-8 animate-in fade-in duration-500">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {isLabCourse ? (
-                                <div className="bg-white p-6 rounded-xl shadow-md border-t-4 border-purple-600 col-span-full md:col-span-1">
-                                    <div className="flex items-center gap-2 mb-4"><Beaker className="text-purple-600" size={20} /><h3 className="font-bold">Lab Manuals</h3></div>
-                                    <input type="text" id="lab-title" placeholder="Manual Name..." className="w-full border p-2 rounded mb-3 text-sm" />
-                                    <input type="file" id="lab-file" className="text-xs mb-4 w-full" />
-                                    <button disabled={uploading} onClick={() => handleFileUpload('Lab Manual', 'lab-title', 'lab-file')} className="w-full bg-purple-600 text-white py-2 rounded font-bold hover:bg-purple-700">
-                                        {uploading ? "Uploading..." : "Upload Manual"}
-                                    </button>
-                                </div>
+                                <>
+                                    <div className="bg-white p-6 rounded-xl shadow-md border-t-4 border-purple-600 col-span-full md:col-span-1">
+                                        <div className="flex items-center gap-2 mb-4"><Beaker className="text-purple-600" size={20} /><h3 className="font-bold">Lab Manuals</h3></div>
+                                        <input type="text" id="lab-title" placeholder="Manual Name..." className="w-full border p-2 rounded mb-3 text-sm" />
+                                        <input type="file" id="lab-file" className="text-xs mb-4 w-full" />
+                                        <button disabled={uploading} onClick={() => handleFileUpload('Lab Manual', 'lab-title', 'lab-file')} className="w-full bg-purple-600 text-white py-2 rounded font-bold hover:bg-purple-700">
+                                            {uploading ? "Uploading..." : "Upload Manual"}
+                                        </button>
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-xl shadow-md border-t-4 border-red-500 col-span-full md:col-span-1">
+                                        <div className="flex items-center gap-2 mb-4"><Video className="text-red-500" size={20} /><h3 className="font-bold">YouTube Videos</h3></div>
+                                        <input type="text" id="lab-yt-title" placeholder="Video Title..." className="w-full border p-2 rounded mb-3 text-sm" />
+                                        <input type="text" id="lab-yt-url" placeholder="YouTube URL..." className="w-full border p-2 rounded mb-3 text-sm" />
+                                        <button disabled={uploading} onClick={() => handleYouTubePost('lab-yt-title','lab-yt-url','YouTube Video')} className="w-full bg-red-500 text-white py-2 rounded font-bold hover:bg-red-600">
+                                            {uploading ? "Posting..." : "Post Video"}
+                                        </button>
+                                    </div>
+                                </>
                             ) : (
                                 <>
                                     <div className="bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-900">
@@ -283,6 +323,15 @@ export default function SectionManagement() {
                                         <input type="text" id="assign-title" placeholder="Title..." className="w-full border p-2 rounded mb-3 text-sm" />
                                         <input type="file" id="assign-file" className="text-xs mb-4 w-full" />
                                         <button disabled={uploading} onClick={() => handleFileUpload('Assignment', 'assign-title', 'assign-file')} className="w-full bg-orange-500 text-white py-2 rounded font-bold">Post Assignment</button>
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-xl shadow-md border-t-4 border-pink-500">
+                                        <div className="flex items-center gap-2 mb-4"><Video className="text-pink-500" size={20} /><h3 className="font-bold">YouTube Videos</h3></div>
+                                        <input type="text" id="yt-title" placeholder="Video Title..." className="w-full border p-2 rounded mb-3 text-sm" />
+                                        <input type="text" id="yt-url" placeholder="YouTube URL..." className="w-full border p-2 rounded mb-3 text-sm" />
+                                        <button disabled={uploading} onClick={() => handleYouTubePost('yt-title','yt-url','YouTube Video')} className="w-full bg-pink-500 text-white py-2 rounded font-bold hover:bg-pink-600">
+                                            {uploading ? "Posting..." : "Post Video"}
+                                        </button>
                                     </div>
                                 </>
                             )}

@@ -27,6 +27,7 @@ class FacultyBase(BaseModel):
     name: str
     designation: str
     doj: str
+    profile_pic: Optional[str] = None
 
 class Faculty(FacultyBase):
     class Config:
@@ -40,6 +41,7 @@ class StudentBase(BaseModel):
     semester: int
     cgpa: float
     attendance_percentage: float
+    profile_pic: Optional[str] = None
 
 class Student(StudentBase):
     class Config:
@@ -74,8 +76,8 @@ class MarkSyncRequest(BaseModel):
 class AnnouncementCreate(BaseModel):
     title: str
     content: str
-    type: str                        # "Department" or "Subject"
-    posted_by: str                   # Matches models.py
+    type: str                        # "Global", "Department", "Subject" or "Faculty"
+    posted_by: str                   # Matches models.py (user id of poster)
     course_code: Optional[str] = None
 
 class Announcement(AnnouncementCreate):

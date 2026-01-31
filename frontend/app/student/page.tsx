@@ -138,14 +138,34 @@ export default function StudentDashboard() {
 
 
 
-    const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!(e.target.files && e.target.files[0])) return;
+        const file = e.target.files[0];
+        // Optimistic preview
+        setProfilePic(URL.createObjectURL(file));
 
-        if (e.target.files && e.target.files[0]) {
+        // Upload to server
+        const userId = localStorage.getItem('user_id');
+        if (!userId) return alert('User not identified');
 
-            setProfilePic(URL.createObjectURL(e.target.files[0]));
+        const form = new FormData();
+        form.append('file', file);
 
+        try {
+            const res = await axios.post(`${API_URL}/student/${userId}/photo`, form, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            const newUrl = res.data.profile_pic;
+            if (newUrl) {
+                setProfilePic(newUrl);
+                setStudent({ ...student, profile_pic: newUrl });
+            }
+            alert('Profile photo updated');
+        } catch (err: any) {
+            console.error('Upload failed', err);
+            const msg = err?.response?.data?.detail || err?.message || 'Upload failed';
+            alert(`Failed to upload photo: ${msg}`);
         }
-
     };
 
 
@@ -278,41 +298,31 @@ export default function StudentDashboard() {
 
                         <div className="bg-white p-6 rounded-lg shadow-md min-h-[500px]">
 
-                            <div className="flex border-b mb-6 overflow-x-auto pb-1 no-scrollbar">
+                            <div className="flex justify-between items-center border-b mb-6 overflow-x-auto pb-1 no-scrollbar">
 
-                                {[
-
-                                    { id: 'courses', label: 'My Courses' },
-
-                                    { id: 'labs', label: 'Laboratory' },
-
-                                    { id: 'cia', label: 'CIA Marks' },
-
-                                    { id: 'results', label: 'Sem Results' }
-
-                                ].map((tab) => (
-
-                                    <button
-
-                                        key={tab.id}
-
-                                        onClick={() => setActiveTab(tab.id)}
-
-                                        className={`px-6 py-3 font-bold whitespace-nowrap transition border-b-4 uppercase text-xs tracking-widest ${activeTab === tab.id
-
+                                <div className="flex">
+                                    {[
+                                        { id: 'courses', label: 'My Courses' },
+                                        { id: 'labs', label: 'Laboratory' },
+                                        { id: 'cia', label: 'CIA Marks' },
+                                        { id: 'results', label: 'Sem Results' }
+                                    ].map((tab) => (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={`px-6 py-3 font-bold whitespace-nowrap transition border-b-4 uppercase text-xs tracking-widest ${activeTab === tab.id
                                                 ? 'text-orange-600 border-orange-500 bg-orange-50/50'
-
                                                 : 'text-gray-400 border-transparent hover:text-blue-900'
-
                                             }`}
+                                        >
+                                            {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
 
-                                    >
-
-                                        {tab.label}
-
-                                    </button>
-
-                                ))}
+                                <div className="flex items-center gap-3">
+                                    <button onClick={() => router.push('/student/toppers')} className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:scale-105 transform transition">🏆 Toppers & Grades</button>
+                                </div>
 
                             </div>
 

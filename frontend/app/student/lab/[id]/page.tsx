@@ -5,7 +5,7 @@ import axios from 'axios';
 import { API_URL } from '@/config';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Book, Megaphone, CheckCircle, ArrowLeft, Download, Clock, FileText } from 'lucide-react';
+import { Book, Megaphone, CheckCircle, ArrowLeft, Download, Clock, FileText, Video } from 'lucide-react';
 
 export default function LabDetails() {
     const params = useParams();
@@ -13,9 +13,35 @@ export default function LabDetails() {
     const labId = params.id;
 
     const [manuals, setManuals] = useState<any[]>([]);
+    const [videos, setVideos] = useState<any[]>([]);
     const [announcements, setAnnouncements] = useState<any[]>([]);
     const [attendance, setAttendance] = useState(0);
     const [loading, setLoading] = useState(true);
+
+    const [selectedVideo, setSelectedVideo] = useState<any | null>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+
+    const getYoutubeId = (url: string) => {
+        try {
+            const u = new URL(url);
+            if (u.hostname.includes('youtu.be')) return u.pathname.slice(1);
+            if (u.hostname.includes('youtube.com')) {
+                const v = u.searchParams.get('v');
+                if (v) return v;
+                const parts = u.pathname.split('/');
+                const idx = parts.indexOf('embed');
+                if (idx !== -1 && parts[idx+1]) return parts[idx+1];
+                const sIdx = parts.indexOf('shorts');
+                if (sIdx !== -1) return parts[parts.length-1];
+            }
+            return null;
+        } catch (e) { return null; }
+    };
+
+    const getThumbnailUrl = (url: string) => {
+        const id = getYoutubeId(url);
+        return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : '';
+    };
 
     useEffect(() => {
         const fetchLabData = async () => {
@@ -26,6 +52,7 @@ export default function LabDetails() {
                 // 1. Fetch Real Materials (Filtered by type "Lab Manual")
                 const matRes = await axios.get(`${API_URL}/materials/${labId}`);
                 setManuals(matRes.data.filter((m: any) => m.type === "Lab Manual"));
+                setVideos(matRes.data.filter((m: any) => m.type === "YouTube Video"));
 
                 // 2. Fetch Lab-Specific Announcements (Filtered to hide Global/General notices)
                 const annRes = await axios.get(`${API_URL}/announcements?course_code=${labId}`);
@@ -45,6 +72,17 @@ export default function LabDetails() {
         };
         fetchLabData();
     }, [labId]);
+
+    const getEmbedUrl = (url: string) => {
+        try {
+            const u = new URL(url);
+            if (u.hostname.includes('youtu.be')) return `https://www.youtube.com/embed/${u.pathname.slice(1)}`;
+            const vid = u.searchParams.get('v');
+            if (vid) return `https://www.youtube.com/embed/${vid}`;
+            if (u.pathname.includes('/embed/')) return url;
+            return url;
+        } catch (e) { return url; }
+    };
 
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center bg-white">
@@ -102,6 +140,46 @@ export default function LabDetails() {
                                     <p className="text-gray-400 text-xs italic">No lab manuals uploaded by faculty yet.</p>
                                 </div>
                             )}
+
+                            {/* Lab Videos */}
+                            <div className="mt-6 border-t pt-4">
+                                <h3 className="font-bold mb-3 flex items-center gap-2 text-sm"><Video className="text-red-500" /> Lab Videos</h3>
+                                {videos.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                                        <div className="md:col-span-1">
+                                            <ul className="space-y-2">
+                                                {videos.map(v => (
+                                                    <li key={v.id}>
+                                                        <button onClick={() => { setSelectedVideo(v); setIsPlaying(false); }} className={`w-full text-left p-3 rounded border hover:bg-gray-50 transition ${selectedVideo?.id === v.id ? 'bg-teal-50 border-teal-100' : 'bg-white'}`}>
+                                                            <p className="font-bold text-sm text-gray-800">{v.title}</p>
+                                                            <p className="text-[10px] text-gray-400 mt-1">Click to preview</p>
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+
+                                        <div className="md:col-span-2 flex items-center justify-center">
+                                            {selectedVideo ? (
+                                                <div className="w-full" style={{ maxWidth: 640 }}>
+                                                    <div className="relative w-full" style={{ paddingTop: '75%' }}>
+                                                        {!isPlaying ? (
+                                                            <>
+                                                                <img src={getThumbnailUrl(selectedVideo.file_link)} alt={selectedVideo.title} className="absolute inset-0 w-full h-full object-cover rounded" />
+                                                                <button onClick={() => setIsPlaying(true)} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 p-3 rounded-full shadow-lg">Play</button>
+                                                            </>
+                                                        ) : (
+                                                            <iframe src={getEmbedUrl(selectedVideo.file_link)} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="absolute inset-0 w-full h-full rounded" title={selectedVideo.title}></iframe>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-center text-gray-400 italic">Click a video title to preview it in CRT-friendly 4:3 display.</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : <p className="text-center py-6 text-gray-400 italic">No lab videos available.</p>}
+                            </div>
                         </div>
                     </div>
 

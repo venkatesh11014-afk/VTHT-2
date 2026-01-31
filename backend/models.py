@@ -16,7 +16,8 @@ class Faculty(Base):
     staff_no = Column(String, ForeignKey("users.id"), primary_key=True)
     name = Column(String)
     designation = Column(String)
-    doj = Column(String) 
+    doj = Column(String)
+    profile_pic = Column(String, nullable=True)
 
     user = relationship("User", back_populates="faculty")
 
@@ -28,6 +29,7 @@ class Student(Base):
     semester = Column(Integer)
     cgpa = Column(Float)
     attendance_percentage = Column(Float) # Overall Attendance
+    profile_pic = Column(String, nullable=True)
 
     user = relationship("User", back_populates="student")
     academic_data = relationship("AcademicData", back_populates="student")
